@@ -1,0 +1,20 @@
+body {
+    background-color: #1a1a1a;
+    color: #ffffff;
+    font-family: 'Courier New', Courier, monospace;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+canvas {
+    background-color: #000;
+    border: 2px solid #fff;
+    /* Deixa os pixels nítidos, sem borrões */
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
