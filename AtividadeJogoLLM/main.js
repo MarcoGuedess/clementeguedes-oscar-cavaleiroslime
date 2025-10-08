@@ -248,12 +248,21 @@ window.addEventListener('load', function () {
     class InputHandler {
         constructor() {
             this.keys = new Set();
-            window.addEventListener('keydown', e => {
-                this.keys.add(e.key.toLowerCase());
+            console.log('🎹 InputHandler criado!');
+
+            document.addEventListener('keydown', (e) => {
+                const key = e.key.toLowerCase();
+                this.keys.add(key);
+                console.log('⬇️ Tecla:', key, '| Total:', this.keys.size);
             });
-            window.addEventListener('keyup', e => {
-                this.keys.delete(e.key.toLowerCase());
+
+            document.addEventListener('keyup', (e) => {
+                const key = e.key.toLowerCase();
+                this.keys.delete(key);
+                console.log('⬆️ Soltou:', key);
             });
+
+            console.log('✅ Listeners registrados!');
         }
     }
 
@@ -282,13 +291,11 @@ window.addEventListener('load', function () {
 
         play(name, force = false) {
             if (this.currentAnimation?.name === name && !force) return;
-
             const newAnimation = this.animations[name];
             if (!newAnimation) {
                 console.error(`Animação "${name}" não encontrada.`);
                 return;
             }
-
             this.currentAnimation = newAnimation;
             this.currentFrame = 0;
             this.frameTimer = 0;
@@ -301,43 +308,33 @@ window.addEventListener('load', function () {
 
             if (this.frameTimer > this.currentAnimation.frameInterval) {
                 this.frameTimer %= this.currentAnimation.frameInterval;
-                this.currentFrame++;
 
-                if (this.currentFrame >= this.currentAnimation.frameCount) {
-                    if (this.currentAnimation.loop) {
-                        this.currentFrame = 0;
-                    } else {
-                        this.currentFrame = this.currentAnimation.frameCount - 1;
-                        this.entity.onAnimationEnd?.(this.currentAnimation.name);
-                    }
+                const isLastFrame = this.currentFrame >= this.currentAnimation.frameCount - 1;
+
+                if (!isLastFrame) {
+                    this.currentFrame++;
+                } else if (this.currentAnimation.loop) {
+                    this.currentFrame = 0;
+                } else {
+                    // Chama onAnimationEnd apenas uma vez, sem alterar o frame.
+                    // O estado do player vai mudar, e a updateAnimationState vai escolher a próxima animação.
+                    this.entity.onAnimationEnd?.(this.currentAnimation.name);
                 }
             }
         }
 
         draw(context) {
-            if (!this.currentAnimation?.spriteSheet?.complete ||
-                this.currentAnimation.spriteSheet.naturalHeight === 0) return;
-
+            if (!this.currentAnimation?.spriteSheet?.complete || this.currentAnimation.spriteSheet.naturalHeight === 0) return;
             const frameWidth = this.entity.frameWidth;
             const frameHeight = this.entity.frameHeight;
             const frame = Math.floor(this.currentFrame);
             const sx = frame * frameWidth;
             const sy = this.entity.spriteRow !== undefined ? this.entity.spriteRow * frameHeight : 0;
-
             context.imageSmoothingEnabled = false;
-
-            context.drawImage(
-                this.currentAnimation.spriteSheet,
-                sx, sy,
-                frameWidth, frameHeight,
-                0, 0,
-                this.entity.width, this.entity.height
-            );
-
+            context.drawImage(this.currentAnimation.spriteSheet, sx, sy, frameWidth, frameHeight, 0, 0, this.entity.width, this.entity.height);
             context.imageSmoothingEnabled = true;
         }
     }
-
     // ===================================
     // TILESET
     // ===================================
@@ -365,91 +362,103 @@ window.addEventListener('load', function () {
     // ===================================
     // PLAYER
     // ===================================
+    // ===================================
+    // PLAYER
+    // ===================================
     class Player {
-    constructor(x, y) {
-        // TESTE DIFERENTES VALORES AQUI
-        this.frameWidth = 128;   // TENTE: 80, 100, 128, 150
-        this.frameHeight = 128;  // TENTE: 80, 100, 128, 150
-        
-        this.width = 120;
-        this.height = 120;
-        
-        this.x = x;
-        this.y = y;
-        this.speed = 4;
-        this.runSpeed = 7;
-        this.vx = 0;
-        this.vy = 0;
-        this.jumpStrength = -18;
-        this.onGround = false;
-        this.isMoving = false;
-        this.isRunning = false;
-        this.timeKeyDown = 0;
-        this.walkStopTime = 0;
-        this.isAttacking = false;
-        this.attackCooldown = 500;
-        this.lastAttackTime = 0;
-        this.killCount = 0;
-        this.maxHealth = 100;
-        this.health = this.maxHealth;
-        this.isInvincible = false;
-        this.invincibilityTimer = 0;
-        this.isDead = false;
-        this.speedMultiplier = 1;
-        this.attackMultiplier = 1;
-        this.boostEndTime = 0;
-        this.facingDirection = 1;
-        
-        this.animator = new AnimationController(this);
-        this.setupAnimations();
-    }
-    
-    setupAnimations() {
-        this.animator.addAnimation('walk', images.playerWalk, 8, 12);
-        this.animator.addAnimation('run', images.playerRun, 8, 15);
-        this.animator.addAnimation('jump', images.playerJump, 6, 10, false);
-        this.animator.addAnimation('hurt', images.playerHurt, 2, 10, false);
-        this.animator.addAnimation('dead', images.playerDead, 6, 8, false);
-        this.animator.addAnimation('attack1', images.playerAttack1, 5, 15, false);
-        this.animator.addAnimation('attack2', images.playerAttack2, 4, 15, false);
-        this.animator.addAnimation('attack3', images.playerAttack3, 4, 15, false);
-        this.animator.addAnimation('runAttack', images.playerRunAttack, 6, 15, false);
-    }
+        constructor(x, y) {
+            // Mantendo o recorte em 128x128 como você confirmou.
+            this.frameWidth = 128;
+            this.frameHeight = 128;
+
+            this.width = 120;
+            this.height = 120;
+
+            this.x = x;
+            this.y = y;
+            this.speed = 4;
+            this.runSpeed = 7;
+            this.vx = 0;
+            this.vy = 0;
+            this.jumpStrength = -18;
+            this.onGround = false;
+            this.isMoving = false;
+            this.isRunning = false;
+            this.timeKeyDown = 0;
+            this.walkStopTime = 0;
+            this.isAttacking = false;
+            this.attackCooldown = 500;
+            this.lastAttackTime = -1000;
+            this.killCount = 0;
+            this.maxHealth = 100;
+            this.health = this.maxHealth;
+            this.isInvincible = false;
+            this.invincibilityTimer = 0;
+            this.isDead = false;
+            this.speedMultiplier = 1;
+            this.attackMultiplier = 1;
+            this.boostEndTime = 0;
+            this.facingDirection = 1;
+
+            this.animator = new AnimationController(this);
+            this.setupAnimations();
+        }
+
+        setupAnimations() {
+            this.animator.addAnimation('walk', images.playerWalk, 8, 10);
+            this.animator.addAnimation('run', images.playerRun, 8, 15);
+            this.animator.addAnimation('jump', images.playerJump, 6, 10, false);
+            this.animator.addAnimation('hurt', images.playerHurt, 2, 10, false);
+            this.animator.addAnimation('dead', images.playerDead, 6, 8, false);
+            this.animator.addAnimation('attack1', images.playerAttack1, 5, 15, false);
+            this.animator.addAnimation('attack2', images.playerAttack2, 4, 15, false);
+            this.animator.addAnimation('attack3', images.playerAttack3, 4, 15, false);
+            this.animator.addAnimation('runAttack', images.playerRunAttack, 6, 15, false);
+        }
 
         update(input, deltaTime, game) {
-            if (this.isDead) {
-                this.animator.update(deltaTime);
-                return;
-            }
+            // Usa timestamp real para lógica de tempo/ cooldowns
+            const now = performance.now();
 
-            const currentTime = performance.now();
+            this.handleInput(input, deltaTime, game);
 
+            // Aplica movimento horizontal
+            this.x += this.vx * this.speedMultiplier;
+
+            // Aplica gravidade e movimento vertical
+            this.vy += GRAVITY;
+            this.y += this.vy;
+
+            // Atualiza invencibilidade com deltaTime correto
             if (this.isInvincible) {
                 this.invincibilityTimer -= deltaTime;
-                if (this.invincibilityTimer <= 0) this.isInvincible = false;
+                if (this.invincibilityTimer <= 0) {
+                    this.isInvincible = false;
+                    this.invincibilityTimer = 0;
+                }
             }
 
-            if (this.boostEndTime > 0 && currentTime > this.boostEndTime) {
+            // Atualiza boost
+            if (this.boostEndTime > 0 && performance.now() > this.boostEndTime) {
                 this.speedMultiplier = 1;
                 this.attackMultiplier = 1;
                 this.boostEndTime = 0;
             }
 
-            this.handleInput(input, currentTime, game);
-
-            this.x += this.vx * this.speedMultiplier;
-            this.y += this.vy;
-            this.vy += GRAVITY;
-
-            this.updateAnimationState(currentTime);
+            // Atualiza animação (usa now para decisões baseadas em tempo absoluto)
+            this.updateAnimationState(now);
             this.animator.update(deltaTime);
         }
 
-        handleInput(input, currentTime, game) {
+        handleInput(input, deltaTime, game) {
+            console.log('🎮 handleInput chamado | keys:', Array.from(input.keys));
+
             if (this.isAttacking) {
                 this.vx = 0;
                 return;
             }
+
+            const now = performance.now();
 
             const moveLeft = input.keys.has('a') || input.keys.has('arrowleft');
             const moveRight = input.keys.has('d') || input.keys.has('arrowright');
@@ -463,10 +472,10 @@ window.addEventListener('load', function () {
             if (moveLeft || moveRight) {
                 if (!this.isMoving) {
                     this.isMoving = true;
-                    this.timeKeyDown = currentTime;
+                    this.timeKeyDown = now;
                 }
 
-                this.isRunning = (currentTime - this.timeKeyDown > WALK_TO_RUN_TIME);
+                this.isRunning = (now - this.timeKeyDown > WALK_TO_RUN_TIME);
                 this.vx = this.isRunning ? this.runSpeed : this.speed;
 
                 if (moveLeft) this.vx = -this.vx;
@@ -474,7 +483,7 @@ window.addEventListener('load', function () {
                 if (this.isMoving) {
                     this.isMoving = false;
                     this.isRunning = false;
-                    this.walkStopTime = currentTime;
+                    this.walkStopTime = now;
                 }
                 this.vx = 0;
             }
@@ -484,46 +493,77 @@ window.addEventListener('load', function () {
                 this.vy = this.jumpStrength;
             }
 
+
             const attackPressed = input.keys.has('j') || input.keys.has('s') || input.keys.has('arrowdown');
-            if (attackPressed && !this.isAttacking && (currentTime - this.lastAttackTime > this.attackCooldown)) {
+            const timeSinceLastAttack = now - this.lastAttackTime;
+            const canAttack = !this.isAttacking && (timeSinceLastAttack > this.attackCooldown);
+
+            console.log('🗡️ Verificando ataque:', {
+                attackPressed,
+                isAttacking: this.isAttacking,
+                timeSinceLastAttack,
+                cooldown: this.attackCooldown,
+                canAttack,
+                now,
+                lastAttackTime: this.lastAttackTime
+            });
+
+            if (attackPressed && canAttack) {  // ⬅️ USE canAttack AQUI!
+                console.log('✨ ATAQUE INICIADO!');
                 this.isAttacking = true;
-                this.lastAttackTime = currentTime;
+                this.lastAttackTime = now;
                 this.vx = 0;
                 game.handlePlayerAttack(this);
             }
-
             if (input.keys.has('v') && this.killCount >= 5) {
                 this.killCount = 0;
                 game.createFireball(this);
             }
         }
 
+        // ===== FUNÇÃO CORRIGIDA =====
         updateAnimationState(currentTime) {
+            // Prioridade 1: Atacando
             if (this.isAttacking) {
-                if (this.animator.currentAnimation?.name.includes('attack')) return;
-
-                if (this.isRunning) {
-                    this.animator.play('runAttack', true);
-                } else {
-                    const attacks = ['attack1', 'attack2', 'attack3'];
-                    this.animator.play(attacks[Math.floor(Math.random() * attacks.length)], true);
+                // Se já não estiver a tocar uma animação de ataque, inicia uma
+                if (!this.animator.currentAnimation?.name.includes('attack')) {
+                    if (this.isRunning) {
+                        this.animator.play('runAttack', true);
+                    } else {
+                        const attacks = ['attack1', 'attack2', 'attack3'];
+                        this.animator.play(attacks[Math.floor(Math.random() * attacks.length)], true);
+                    }
                 }
+                return; // Sai da função para não sobrepor com outras animações
             }
-            else if (this.isInvincible) {
+
+            // Prioridade 2: Tomando Dano
+            if (this.isInvincible) {
                 this.animator.play('hurt');
+                return;
             }
-            else if (!this.onGround) {
+
+            // Prioridade 3: No Ar
+            if (!this.onGround) {
                 this.animator.play('jump');
+                return;
             }
-            else if (this.isRunning) {
+
+            // Se chegou aqui, está no chão e não está a atacar nem a tomar dano
+            // Prioridade 4: Correndo
+            if (this.isRunning) {
                 this.animator.play('run');
+                return;
             }
-            else if (this.isMoving || (currentTime - this.walkStopTime < WALK_AFTER_STOP_TIME)) {
+
+            // Prioridade 5: Andando (ou desacelerando)
+            if (this.isMoving || (currentTime - this.walkStopTime < WALK_AFTER_STOP_TIME)) {
                 this.animator.play('walk');
+                return;
             }
-            else {
-                this.animator.play('walk');
-            }
+
+            // Estado Padrão: Parado (mostra a animação de andar no primeiro frame)
+            this.animator.play('walk');
         }
 
         draw(context) {
@@ -570,8 +610,14 @@ window.addEventListener('load', function () {
         }
 
         onAnimationEnd(animationName) {
-            if (animationName.includes('attack')) this.isAttacking = false;
-            if (animationName === 'dead') game.gameOver = true;
+            console.log('🎬 Animação terminada:', animationName);
+            if (animationName.includes('attack')) {
+                this.isAttacking = false;
+                console.log('✅ isAttacking resetado para false');
+            }
+            if (animationName === 'dead') {
+                this.isDead = true;
+            }
         }
     }
 
@@ -580,19 +626,19 @@ window.addEventListener('load', function () {
     // ===================================
     class Slime {
         constructor(x, y) {
-            this.frameWidth = 32;
+            this.frameWidth = 25;
             this.frameHeight = 32;
-            this.width = 64;
+            this.width = 50;
             this.height = 64;
             this.x = x;
-            this.y = y - 32; // AJUSTE: não flutuar
+            this.y = y; // AJUSTE: não flutuar
             this.speed = 2;
             this.vx = 0;
             this.vy = 0;
-            this.onGround = false;
+            this.onGround = true;
             this.markedForDeletion = false;
             this.health = 100;
-            this.spriteRow = 1;
+            this.spriteRow = 1.50;
             this.hopTimer = 0;
             this.hopInterval = Math.random() * 1000 + 1000;
             this.isHopping = false;
