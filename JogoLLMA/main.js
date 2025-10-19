@@ -43,10 +43,20 @@ window.addEventListener('load', function () {
         background2: 'country-platform-forest.png',
     };
 
+
+
+    const audioSources = {
+        swordAttack: 'sword sound.wav',
+        slimeJump: 'slime_jump.wav',
+        ambience1: 'amb_bird_1.flac',
+        ambience2: 'amb_bird_2.flac',
+    };
+
+
+
     let images = {};
     let imagesLoaded = 0;
     const numImages = Object.keys(imageSources).length;
-
     for (const key in imageSources) {
         images[key] = new Image();
         images[key].src = imageSources[key];
@@ -54,12 +64,20 @@ window.addEventListener('load', function () {
         images[key].onerror = () => {
             console.error(`ERRO AO CARREGAR: ${imageSources[key]}`);
             imagesLoaded++;
+
+
         }
     }
 
     // ===================================
     // UTILITÁRIOS
     // ===================================
+    /**
+     * Verifica a colisão entre dois retângulos (Axis-Aligned Bounding Box).
+     * @param {object} rect1 - O primeiro retângulo {x, y, width, height}.
+     * @param {object} rect2 - O segundo retângulo {x, y, width, height}.
+     * @returns {boolean} - Retorna true se houver colisão, caso contrário, false.
+     */
     function checkAABBCollision(rect1, rect2) {
         return (
             rect1.x < rect2.x + rect2.width &&
@@ -69,6 +87,14 @@ window.addEventListener('load', function () {
         );
     }
 
+    /**
+     * Verifica se uma entidade está dentro da área visível da câmera, com uma margem.
+     * @param {object} entity - A entidade a ser verificada {x, width}.
+     * @param {number} cameraX - A posição X da câmera.
+     * @param {number} screenWidth - A largura da tela.
+     * @param {number} [margin=200] - Uma margem extra para carregar entidades um pouco fora da tela.
+     * @returns {boolean} - Retorna true se a entidade estiver na tela, caso contrário, false.
+     */
     function isOnScreen(entity, cameraX, screenWidth, margin = 200) {
         return (
             entity.x + entity.width > cameraX - margin &&
@@ -90,6 +116,16 @@ window.addEventListener('load', function () {
             this.active = false;
         }
 
+        /**
+         * Ativa e configura uma partícula com novas propriedades.
+         * @param {number} x - Posição inicial X.
+         * @param {number} y - Posição inicial Y.
+         * @param {number} vx - Velocidade inicial no eixo X.
+         * @param {number} vy - Velocidade inicial no eixo Y.
+         * @param {number} life - Duração da partícula em milissegundos.
+         * @param {string} color - Cor da partícula.
+         * @param {number} size - Tamanho da partícula.
+         */
         spawn(x, y, vx, vy, life, color, size) {
             this.x = x; this.y = y;
             this.vx = vx; this.vy = vy;
@@ -99,6 +135,10 @@ window.addEventListener('load', function () {
             this.active = true;
         }
 
+        /**
+         * Atualiza a posição e o tempo de vida da partícula.
+         * @param {number} deltaTime - O tempo decorrido desde o último frame.
+         */
         update(deltaTime) {
             if (!this.active) return;
             this.x += this.vx;
@@ -108,6 +148,10 @@ window.addEventListener('load', function () {
             if (this.life <= 0) this.active = false;
         }
 
+        /**
+         * Desenha a partícula no canvas.
+         * @param {CanvasRenderingContext2D} context - O contexto 2D do canvas.
+         */
         draw(context) {
             if (!this.active) return;
             const alpha = this.life / this.maxLife;
@@ -119,6 +163,10 @@ window.addEventListener('load', function () {
     }
 
     class ParticleSystem {
+        /**
+         * Cria um sistema de partículas com um pool de objetos reutilizáveis.
+         * @param {number} [poolSize=150] - O número máximo de partículas que podem existir ao mesmo tempo.
+         */
         constructor(poolSize = 150) {
             this.particles = [];
             for (let i = 0; i < poolSize; i++) {
@@ -126,6 +174,13 @@ window.addEventListener('load', function () {
             }
         }
 
+        /**
+         * Emite um número de partículas a partir de uma posição.
+         * @param {number} x - Posição X da emissão.
+         * @param {number} y - Posição Y da emissão.
+         * @param {number} count - Número de partículas a serem emitidas.
+         * @param {object} [config={}] - Configurações para as partículas (cor, tamanho, vida, etc.).
+         */
         emit(x, y, count, config = {}) {
             const {
                 color = '#ff6b6b',
@@ -149,10 +204,18 @@ window.addEventListener('load', function () {
             }
         }
 
+        /**
+         * Atualiza todas as partículas ativas no sistema.
+         * @param {number} deltaTime - O tempo decorrido desde o último frame.
+         */
         update(deltaTime) {
             this.particles.forEach(p => p.update(deltaTime));
         }
 
+        /**
+         * Desenha todas as partículas ativas no canvas.
+         * @param {CanvasRenderingContext2D} context - O contexto 2D do canvas.
+         */
         draw(context) {
             this.particles.forEach(p => p.draw(context));
         }
@@ -169,11 +232,20 @@ window.addEventListener('load', function () {
             this.y = 0;
         }
 
+        /**
+         * Inicia um efeito de tremor de tela.
+         * @param {number} [duration=200] - A duração do tremor em milissegundos.
+         * @param {number} [intensity=5] - A intensidade (deslocamento máximo) do tremor.
+         */
         shake(duration = 200, intensity = 5) {
             this.duration = duration;
             this.intensity = intensity;
         }
 
+        /**
+         * Atualiza a duração e a intensidade do tremor a cada frame.
+         * @param {number} deltaTime - O tempo decorrido desde o último frame.
+         */
         update(deltaTime) {
             if (this.duration <= 0) {
                 this.x = 0;
@@ -189,6 +261,10 @@ window.addEventListener('load', function () {
             this.y = (Math.random() - 0.5) * currentIntensity * 2;
         }
 
+        /**
+         * Aplica o deslocamento do tremor ao contexto do canvas.
+         * @param {CanvasRenderingContext2D} context - O contexto 2D do canvas.
+         */
         apply(context) {
             context.translate(Math.floor(this.x), Math.floor(this.y));
         }
@@ -198,11 +274,19 @@ window.addEventListener('load', function () {
     // TRAIL RENDERER
     // ===================================
     class TrailRenderer {
+        /**
+         * Cria um renderizador de rastro para efeitos de movimento.
+         * @param {number} [maxTrails=10] - O número máximo de segmentos de rastro.
+         */
         constructor(maxTrails = 10) {
             this.trails = [];
             this.maxTrails = maxTrails;
         }
 
+        /**
+         * Adiciona um novo segmento de rastro na posição atual de uma entidade.
+         * @param {object} entity - A entidade que está deixando o rastro.
+         */
         addTrail(entity) {
             this.trails.push({
                 x: entity.x,
@@ -218,6 +302,10 @@ window.addEventListener('load', function () {
             }
         }
 
+        /**
+         * Atualiza a opacidade e remove os segmentos de rastro antigos.
+         * @param {number} deltaTime - O tempo decorrido desde o último frame.
+         */
         update(deltaTime) {
             for (let i = this.trails.length - 1; i >= 0; i--) {
                 this.trails[i].alpha -= deltaTime / 150;
@@ -227,6 +315,10 @@ window.addEventListener('load', function () {
             }
         }
 
+        /**
+         * Desenha todos os segmentos de rastro no canvas.
+         * @param {CanvasRenderingContext2D} context - O contexto 2D do canvas.
+         */
         draw(context) {
             this.trails.forEach(trail => {
                 context.globalAlpha = trail.alpha * 0.3;
@@ -246,6 +338,9 @@ window.addEventListener('load', function () {
     // INPUT HANDLER
     // ===================================
     class InputHandler {
+        /**
+         * Gerencia as entradas do teclado, mantendo um registro das teclas pressionadas.
+         */
         constructor() {
             this.keys = new Set();
             console.log('🎹 InputHandler criado!');
@@ -267,6 +362,58 @@ window.addEventListener('load', function () {
     }
 
     // ===================================
+    // AUDIO MANAGER (NOVA CLASSE)
+    // ===================================
+    class AudioManager {
+        constructor() {
+            this.sounds = {};
+        }
+
+        /**
+         * Carrega um arquivo de áudio e o associa a um nome.
+         * @param {string} name - O nome para identificar o som.
+         * @param {string} src - O caminho para o arquivo de áudio.
+         */
+        load(name, src) {
+            this.sounds[name] = new Audio(src);
+        }
+
+        /**
+         * Toca um som carregado.
+         * @param {string} name - O nome do som a ser tocado.
+         * @param {number} [volume=1.0] - O volume do som (0.0 a 1.0).
+         */
+        play(name, volume = 1.0) {
+            const sound = this.sounds[name];
+            if (sound) {
+                sound.currentTime = 0; // Reinicia o som para que possa ser tocado em rápida sucessão
+                sound.volume = volume;
+                sound.play();
+            }
+        }
+
+        /**
+         * Toca um som carregado em loop.
+         * @param {string} name - O nome do som a ser tocado.
+         * @param {number} [volume=1.0] - O volume do som (0.0 a 1.0).
+         */
+        loop(name, volume = 1.0) {
+            const sound = this.sounds[name];
+            if (sound) {
+                sound.loop = true;
+                sound.volume = volume;
+                sound.play();
+            }
+        }
+    }
+
+    // Instancia o gerenciador de áudio depois da definição da classe
+    const audioManager = new AudioManager();
+    for (const key in audioSources) {
+        audioManager.load(key, audioSources[key]);
+    }
+
+    // ===================================
     // ANIMATION CONTROLLER
     // ===================================
     class AnimationController {
@@ -278,6 +425,14 @@ window.addEventListener('load', function () {
             this.frameTimer = 0;
         }
 
+        /**
+         * Adiciona uma nova animação ao controlador.
+         * @param {string} name - O nome da animação.
+         * @param {HTMLImageElement} spriteSheet - A imagem da folha de sprites.
+         * @param {number} frameCount - O número de frames na animação.
+         * @param {number} frameRate - A taxa de quadros por segundo (FPS).
+         * @param {boolean} [loop=true] - Se a animação deve repetir.
+         */
         addAnimation(name, spriteSheet, frameCount, frameRate, loop = true) {
             this.animations[name] = {
                 name,
@@ -289,6 +444,11 @@ window.addEventListener('load', function () {
             };
         }
 
+        /**
+         * Inicia a reprodução de uma animação específica.
+         * @param {string} name - O nome da animação a ser reproduzida.
+         * @param {boolean} [force=false] - Se deve forçar o reinício da animação mesmo que já esteja tocando.
+         */
         play(name, force = false) {
             if (this.currentAnimation?.name === name && !force) return;
             const newAnimation = this.animations[name];
@@ -301,6 +461,10 @@ window.addEventListener('load', function () {
             this.frameTimer = 0;
         }
 
+        /**
+         * Atualiza o frame atual da animação com base no tempo decorrido.
+         * @param {number} deltaTime - O tempo decorrido desde o último frame.
+         */
         update(deltaTime) {
             if (!this.currentAnimation) return;
 
@@ -323,6 +487,10 @@ window.addEventListener('load', function () {
             }
         }
 
+        /**
+         * Desenha o frame atual da animação no canvas.
+         * @param {CanvasRenderingContext2D} context - O contexto 2D do canvas.
+         */
         draw(context) {
             if (!this.currentAnimation?.spriteSheet?.complete || this.currentAnimation.spriteSheet.naturalHeight === 0) return;
             const frameWidth = this.entity.frameWidth;
@@ -339,11 +507,25 @@ window.addEventListener('load', function () {
     // TILESET
     // ===================================
     class Tileset {
+        /**
+         * Gerencia uma folha de sprites de tiles (cenário).
+         * @param {HTMLImageElement} image - A imagem do tileset.
+         * @param {object} tileConfig - Um objeto que mapeia tipos de tile para suas coordenadas [sx, sy, sw, sh] na imagem.
+         */
         constructor(image, tileConfig) {
             this.image = image;
             this.tileMap = tileConfig;
         }
 
+        /**
+         * Desenha um tile específico no canvas.
+         * @param {CanvasRenderingContext2D} context - O contexto 2D do canvas.
+         * @param {string} tileType - O tipo de tile a ser desenhado (ex: '1', '2').
+         * @param {number} dx - Posição X de destino no canvas.
+         * @param {number} dy - Posição Y de destino no canvas.
+         * @param {number} dWidth - Largura de destino no canvas.
+         * @param {number} dHeight - Altura de destino no canvas.
+         */
         draw(context, tileType, dx, dy, dWidth, dHeight) {
             if (!this.image?.complete || this.image.naturalHeight === 0) {
                 context.fillStyle = '#8d6e63';
@@ -359,20 +541,25 @@ window.addEventListener('load', function () {
         }
     }
 
-    // ===================================
-    // PLAYER
-    // ===================================
+
     // ===================================
     // PLAYER
     // ===================================
     class Player {
-        constructor(x, y) {
+        /**
+         * Representa o personagem do jogador.
+         * @param {number} x - Posição inicial X.
+         * @param {number} y - Posição inicial Y.
+         * @param {Game} game - A instância principal do jogo.
+         */
+        constructor(x, y, game) { // 1. Adicionar 'game' ao construtor
             // Mantendo o recorte em 128x128 como você confirmou.
             this.frameWidth = 128;
             this.frameHeight = 128;
 
             this.width = 120;
             this.height = 120;
+            this.game = game; // 2. Armazenar a referência do jogo
 
             this.x = x;
             this.y = y;
@@ -399,11 +586,15 @@ window.addEventListener('load', function () {
             this.attackMultiplier = 1;
             this.boostEndTime = 0;
             this.facingDirection = 1;
+            this.attackEndTime = 0; // fallback timestamp (ms) to force end attack if animation misses onAnimationEnd
 
             this.animator = new AnimationController(this);
             this.setupAnimations();
         }
 
+        /**
+         * Configura e adiciona todas as animações do jogador ao AnimationController.
+         */
         setupAnimations() {
             this.animator.addAnimation('walk', images.playerWalk, 8, 10);
             this.animator.addAnimation('run', images.playerRun, 8, 15);
@@ -416,6 +607,12 @@ window.addEventListener('load', function () {
             this.animator.addAnimation('runAttack', images.playerRunAttack, 6, 15, false);
         }
 
+        /**
+         * Método principal de atualização do jogador, chamado a cada frame.
+         * @param {InputHandler} input - O gerenciador de entradas.
+         * @param {number} deltaTime - O tempo decorrido desde o último frame.
+         * @param {Game} game - A instância principal do jogo.
+         */
         update(input, deltaTime, game) {
             // Usa timestamp real para lógica de tempo/ cooldowns
             const now = performance.now();
@@ -448,20 +645,53 @@ window.addEventListener('load', function () {
             // Atualiza animação (usa now para decisões baseadas em tempo absoluto)
             this.updateAnimationState(now);
             this.animator.update(deltaTime);
+
+            // Safety fallback: se a animação de ataque não disparou onAnimationEnd, liberamos o estado
+            if (this.isAttacking && this.attackEndTime > 0 && performance.now() > this.attackEndTime) {
+                console.warn('⚠️ attackEndTime atingido — resetando isAttacking automaticamente');
+                this.isAttacking = false;
+                this.attackEndTime = 0;
+            }
         }
 
+        /**
+         * Processa as entradas do teclado para controlar o movimento e as ações do jogador.
+         * @param {InputHandler} input - O gerenciador de entradas.
+         * @param {number} deltaTime - O tempo decorrido desde o último frame.
+         * @param {Game} game - A instância principal do jogo.
+         */
         handleInput(input, deltaTime, game) {
             console.log('🎮 handleInput chamado | keys:', Array.from(input.keys));
 
+            const now = performance.now();
+
+            // Detecta entradas de movimento imediatamente para decidir comportamento durante runAttack
+            const moveLeft = input.keys.has('a') || input.keys.has('arrowleft');
+            const moveRight = input.keys.has('d') || input.keys.has('arrowright');
+
+            // Se estiver a atacar, permita movimento apenas se for o ataque em corrida (runAttack)
+            // e se a tecla de movimento correspondente estiver pressionada. Caso contrário bloqueia.
             if (this.isAttacking) {
+                const animName = this.animator.currentAnimation?.name;
+                if (animName === 'runAttack') {
+                    // Mantém a velocidade de corrida apenas se o jogador ainda estiver pressionando a tecla de movimento
+                    if (moveRight) {
+                        this.facingDirection = 1;
+                        this.vx = this.runSpeed;
+                    } else if (moveLeft) {
+                        this.facingDirection = -1;
+                        this.vx = -this.runSpeed;
+                    } else {
+                        // Se não houver tecla de movimento, não avançar automaticamente durante runAttack
+                        this.vx = 0;
+                    }
+                    return;
+                }
+
+                // Caso contrário, bloqueia o movimento enquanto ataca.
                 this.vx = 0;
                 return;
             }
-
-            const now = performance.now();
-
-            const moveLeft = input.keys.has('a') || input.keys.has('arrowleft');
-            const moveRight = input.keys.has('d') || input.keys.has('arrowright');
 
             if (moveLeft) {
                 this.facingDirection = -1;
@@ -513,6 +743,8 @@ window.addEventListener('load', function () {
                 this.isAttacking = true;
                 this.lastAttackTime = now;
                 this.vx = 0;
+                // fallback para garantir que o ataque termine (se onAnimationEnd não for chamado por algum motivo)
+                this.attackEndTime = now + 1000; // 1s padrão
                 game.handlePlayerAttack(this);
             }
             if (input.keys.has('v') && this.killCount >= 5) {
@@ -521,7 +753,11 @@ window.addEventListener('load', function () {
             }
         }
 
-        // ===== FUNÇÃO CORRIGIDA =====
+        /**
+         * Determina qual animação deve ser reproduzida com base no estado atual do jogador.
+         * A lógica segue uma ordem de prioridade (ex: atacar tem prioridade sobre andar).
+         * @param {number} currentTime - O timestamp atual (performance.now()).
+         */
         updateAnimationState(currentTime) {
             // Prioridade 1: Atacando
             if (this.isAttacking) {
@@ -566,6 +802,10 @@ window.addEventListener('load', function () {
             this.animator.play('walk');
         }
 
+        /**
+         * Desenha o jogador no canvas.
+         * @param {CanvasRenderingContext2D} context - O contexto 2D do canvas.
+         */
         draw(context) {
             if (this.isInvincible && Math.floor(this.invincibilityTimer / 100) % 2 === 0) return;
 
@@ -581,27 +821,56 @@ window.addEventListener('load', function () {
             context.restore();
         }
 
+        /**
+         * Aplica dano ao jogador e ativa o estado de invencibilidade temporária.
+         * @param {number} amount - A quantidade de dano a ser recebida.
+         */
         takeDamage(amount) {
             if (this.isInvincible || this.isDead) return;
+
+            // Cancela ataque atual se estiver atacando
+            if (this.isAttacking) {
+                this.isAttacking = false;
+                this.attackEndTime = 0;
+                // Força animação de hurt (cancela a animação de ataque)
+                this.animator.play('hurt', true);
+                console.log('❗ Ataque cancelado por dano');
+            }
+
             this.health -= amount;
             this.isInvincible = true;
             this.invincibilityTimer = 1500;
+
+            // Garante que o jogador não fique preso com vx travado
+            this.vx = 0;
+
             if (this.health <= 0) {
                 this.health = 0;
                 this.die();
             }
         }
 
+        /**
+         * Inicia a sequência de morte do jogador.
+         */
         die() {
             if (this.isDead) return;
             this.isDead = true;
             this.animator.play('dead', true);
         }
 
+        /**
+         * Cura o jogador, restaurando uma quantidade de vida.
+         * @param {number} amount - A quantidade de vida a ser restaurada.
+         */
         heal(amount) {
             this.health = Math.min(this.maxHealth, this.health + amount);
         }
 
+        /**
+         * Aplica um boost temporário ao jogador (velocidade e ataque aumentados).
+         * @param {number} duration - A duração do boost em milissegundos.
+         */
         applyBoost(duration) {
             this.heal(this.maxHealth);
             this.speedMultiplier = 1.5;
@@ -609,14 +878,25 @@ window.addEventListener('load', function () {
             this.boostEndTime = performance.now() + duration;
         }
 
+        /**
+         * Função de callback que é chamada quando uma animação não-repetitiva termina.
+         * @param {string} animationName - O nome da animação que terminou.
+         */
         onAnimationEnd(animationName) {
             console.log('🎬 Animação terminada:', animationName);
+            // Se uma animação de ataque terminou, reseta o estado de ataque.
             if (animationName.includes('attack')) {
-                this.isAttacking = false;
-                console.log('✅ isAttacking resetado para false');
+                if (this.isAttacking) {
+                    this.isAttacking = false;
+                    console.log('✅ isAttacking resetado para false');
+                } else {
+                    console.log('ℹ️ onAnimationEnd(attack) chamado, mas isAttacking já é false');
+                }
             }
+            // Se a animação de morte terminou, informa ao jogo que é "Game Over".
             if (animationName === 'dead') {
                 this.isDead = true;
+                this.game.gameOver = true; // <-- AQUI ESTÁ A CORREÇÃO PRINCIPAL!
             }
         }
     }
@@ -625,6 +905,11 @@ window.addEventListener('load', function () {
     // SLIME
     // ===================================
     class Slime {
+        /**
+         * Representa um inimigo do tipo Slime.
+         * @param {number} x - Posição inicial X.
+         * @param {number} y - Posição inicial Y.
+         */
         constructor(x, y) {
             this.frameWidth = 25;
             this.frameHeight = 32;
@@ -649,6 +934,11 @@ window.addEventListener('load', function () {
             this.animator.play('idle');
         }
 
+        /**
+         * Atualiza a lógica do Slime, incluindo movimento (pulo) e gravidade.
+         * @param {number} deltaTime - O tempo decorrido desde o último frame.
+         * @param {Player} player - A instância do jogador, para direcionar o pulo.
+         */
         update(deltaTime, player) {
             this.y += this.vy;
             this.x += this.vx;
@@ -670,6 +960,9 @@ window.addEventListener('load', function () {
                     this.hopTimer = 0;
                     this.hopInterval = Math.random() * 1000 + 1000;
                     this.animator.play('hop', true);
+
+                    // ADICIONE ESTA LINHA PARA O SOM DO PULO
+                    audioManager.play('slimeJump', 0.5); // 0.5 é o volume (50%)
                 }
             }
 
@@ -678,6 +971,10 @@ window.addEventListener('load', function () {
             }
         }
 
+        /**
+         * Desenha o Slime no canvas.
+         * @param {CanvasRenderingContext2D} context - O contexto 2D do canvas.
+         */
         draw(context) {
             context.save();
             context.translate(Math.floor(this.x), Math.floor(this.y));
@@ -685,6 +982,10 @@ window.addEventListener('load', function () {
             context.restore();
         }
 
+        /**
+         * Aplica dano ao Slime. Se a vida chegar a zero, ele é marcado para remoção.
+         * @param {number} amount - A quantidade de dano a ser recebida.
+         */
         takeDamage(amount) {
             this.health -= amount;
             if (this.health <= 0) this.markedForDeletion = true;
@@ -695,6 +996,12 @@ window.addEventListener('load', function () {
     // OUTRAS ENTIDADES
     // ===================================
     class Platform {
+        /**
+         * Representa uma plataforma sólida do cenário.
+         * @param {number} x - Posição X.
+         * @param {number} y - Posição Y.
+         * @param {string} type - O tipo de tile, usado para desenhar a aparência correta.
+         */
         constructor(x, y, type) {
             this.x = x;
             this.y = y;
@@ -703,11 +1010,22 @@ window.addEventListener('load', function () {
             this.type = type;
         }
 
+        /**
+         * Desenha a plataforma usando um tileset.
+         * @param {CanvasRenderingContext2D} context - O contexto 2D do canvas.
+         * @param {Tileset} tileset - O tileset do nível atual.
+         */
         draw(context, tileset) {
             tileset.draw(context, this.type, this.x, this.y, this.width, this.height);
         }
     }
 
+    /**
+     * Classe base para todos os itens e objetos interativos do jogo.
+     * @param {number} x - Posição X.
+     * @param {number} y - Posição Y.
+     * @param {HTMLImageElement} image - A imagem que representa o objeto.
+     */
     class Interactable {
         constructor(x, y, image) {
             this.image = image;
@@ -718,6 +1036,10 @@ window.addEventListener('load', function () {
             this.markedForDeletion = false;
         }
 
+        /**
+         * Desenha o objeto interativo no canvas.
+         * @param {CanvasRenderingContext2D} context - O contexto 2D do canvas.
+         */
         draw(context) {
             if (this.image?.complete && this.image.naturalHeight > 0) {
                 context.drawImage(this.image, this.x, this.y, this.width, this.height);
@@ -725,50 +1047,89 @@ window.addEventListener('load', function () {
         }
     }
 
+    /** Representa um espinho que causa dano ao jogador. */
     class Spike extends Interactable {
         constructor(x, y) { super(x, y, images.spikes); }
     }
 
+    /** Representa a água, que pode ser um obstáculo. */
     class Water extends Interactable {
         constructor(x, y) { super(x, y, images.water); }
     }
 
+    /** Representa uma maçã que cura o jogador. */
     class Apple extends Interactable {
         constructor(x, y) { super(x, y, images.apple); }
     }
 
+    /** Representa uma estrela que concede um boost ao jogador. */
     class Star extends Interactable {
         constructor(x, y) { super(x, y, images.star); }
     }
 
+    /**
+     * Representa o ponto final da fase.
+     */
     class Flag {
+        /**
+         * @param {number} x - Posição X.
+         * @param {number} y - Posição Y.
+         */
         constructor(x, y) {
             this.x = x;
             this.y = y;
-            this.frameWidth = 64;
-            this.frameHeight = 64;
             this.width = TILE_SIZE;
             this.height = TILE_SIZE;
-            this.spriteRow = 0;
-
-            this.animator = new AnimationController(this);
-            this.animator.addAnimation('wave', images.flagSheet, 4, 5);
-            this.animator.play('wave');
+            this.animationTimer = 0; // Timer para animar a seta
         }
 
+        /**
+         * Atualiza o timer da animação.
+         * @param {number} deltaTime - O tempo decorrido desde o último frame.
+         */
         update(deltaTime) {
-            this.animator.update(deltaTime);
+            // Faz a seta pulsar para cima e para baixo
+            this.animationTimer += deltaTime;
         }
 
+        /**
+         * Desenha o indicador de "Fim da Fase" com uma seta e texto.
+         * @param {CanvasRenderingContext2D} context - O contexto 2D do canvas.
+         */
         draw(context) {
-            context.save();
-            context.translate(Math.floor(this.x), Math.floor(this.y));
-            this.animator.draw(context);
-            context.restore();
+            const centerX = this.x + this.width / 2;
+            // Posição Y da seta, com uma pequena animação de pulso
+            const arrowY = this.y - 60 + Math.sin(this.animationTimer / 200) * 5;
+
+            // Desenha o texto "Fim da Fase"
+            context.fillStyle = 'white';
+            context.font = 'bold 24px Courier New';
+            context.textAlign = 'center';
+            context.fillText('Fim da Fase', centerX, arrowY - 30);
+
+            // Desenha a seta apontando para baixo
+            context.fillStyle = '#ffd700'; // Cor dourada
+            context.beginPath();
+            context.moveTo(centerX - 20, arrowY);
+            context.lineTo(centerX + 20, arrowY);
+            context.lineTo(centerX, arrowY + 20);
+            context.closePath();
+            context.fill();
+
+            // Resetar o alinhamento para não afetar outros desenhos
+            context.textAlign = 'left';
         }
     }
 
+    /**
+     * Representa o projétil de bola de fogo disparado pelo jogador.
+     */
     class BlueFireball {
+        /**
+         * @param {number} x - Posição inicial X.
+         * @param {number} y - Posição inicial Y.
+         * @param {number} direction - A direção do movimento (-1 para esquerda, 1 para direita).
+         */
         constructor(x, y, direction) {
             this.frameWidth = 80;
             this.frameHeight = 80;
@@ -785,6 +1146,11 @@ window.addEventListener('load', function () {
             this.animator.play('fly');
         }
 
+        /**
+         * Atualiza a posição da bola de fogo e a marca para remoção se sair da tela.
+         * @param {number} deltaTime - O tempo decorrido desde o último frame.
+         * @param {Game} game - A instância principal do jogo.
+         */
         update(deltaTime, game) {
             this.x += this.speed * this.direction;
             this.animator.update(deltaTime);
@@ -794,6 +1160,10 @@ window.addEventListener('load', function () {
             }
         }
 
+        /**
+         * Desenha a bola de fogo no canvas.
+         * @param {CanvasRenderingContext2D} context - O contexto 2D do canvas.
+         */
         draw(context) {
             context.save();
             context.translate(Math.floor(this.x), Math.floor(this.y));
@@ -817,49 +1187,50 @@ window.addEventListener('load', function () {
         '                                                                                                          ',
         '    P                                                                                                     ',
         '   111      A                                                                                             ',
-        '                3333                 *                     E                                              ',
-        '                                  11111                 1111111                                           ',
-        '       E        E               S S S S            A                        E                             ',
-        '       1111111111111111         1111111         1111111                  1111111                          ',
-        '                                                            E       E              E              F        ',
-        '1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111',
+        '                3333                 *                     E                                    F          ',
+        '                                  11111                 1111111                                 1111          ',
+        '       E        E                  S S S            A                        E                             ',
+        '       1111  111111111    111     1111111         1111111                  1111111                  111        ',
+        '               E                       E                      E       E              E                     ',
+        '11111111111111111111111111     111111111111111111111111111111111111111111111111111111111111WWW11111111',
     ];
 
     const level2Map = [
         '                                                                                                          ',
         '                                                                                                          ',
+        '                                                                                                          ',
         '    P                                                                                                     ',
-        '   111                                 E                                                                  ',
-        '               A                    1111111                                                               ',
-        '          E           S S S                                    E                                          ',
-        '      1111111111      11111                                 1111111                                       ',
-        '                                  111111                                    E                             ',
-        '                                              E                          1111111                          ',
-        '                      *                    1111111                                                        ',
-        '   111111   1111111111111   11111111111111                                                                ',
-        '                                                 E        E        E                  E          F        ',
-        '1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111',
+        '   111      A                                                                                             ',
+        '                3333                 *                     E                                              ',
+        '                                  11111                 1111111                                           ',
+        '       E        E                           A                        E                             ',
+        '       1111  1111111111                  1111111                  1111111                          ',
+        '                     E            SSSS               E            E       E         E     E              F        ',
+        '11111111111111111111111111111111111111111111     1111111111111111111111111111111111111   1111111111111111111111',
     ];
-
     const level3Map = [
         '                                                                                                          ',
-        '  P                                                                                                       ',
-        ' 111                                                                                                      ',
-        '             111111                        E                                                              ',
-        '        E                S S            1111111                 E                                         ',
-        '      11111              11111                 *             1111111                                      ',
-        '                                             11111                            E                           ',
-        '                                                        A                  1111111                        ',
-        '1111111   111111  1111111111       E                         1111111                          E           ',
-        '                                1111111       E                                            1111111        ',
-        '                                                       E                  E              E            F   ',
-        '1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111',
+        '                                                                                                          ',
+        '                                        F       E                   E       E      E     E                     ',
+        '    P                                1111111111111111111111  1111111111111111111111111111111111                 ',
+        '   111      A                                                                                 1111            ',
+        '                3333                 *                     E                                        11      ',
+        '                                  11111                 1111111                                 11          ',
+        '       E        E               S S S S            A                        E                             ',
+        '       1111111111111111         1111111         1111111                  1111111                  111        ',
+        '                                                            E       E              E                      ',
+        '1111111WWWWWWWWWWWWWWWWW111111111111111111111111111111111111111111111111111111111111111111111111111111111',
     ];
 
     // ===================================
     // GAME CLASS
     // ===================================
     class Game {
+        /**
+         * A classe principal que gerencia todo o estado do jogo, entidades e o loop principal.
+         * @param {number} width - A largura do canvas.
+         * @param {number} height - A altura do canvas.
+         */
         constructor(width, height) {
             this.width = width;
             this.height = height;
@@ -899,10 +1270,28 @@ window.addEventListener('load', function () {
             this.cameraX = 0;
             this.gameOver = false;
             this.victory = false;
+            this.gameState = 'MENU'; // Estados possíveis: 'MENU', 'PLAYING', 'GAME_OVER', 'VICTORY'
 
-            this.loadLevel(this.currentLevel);
+            //this.loadLevel(this.currentLevel);
         }
 
+        /**
+         * Reseta o jogo para o estado inicial, recarregando o primeiro nível.
+         */
+        resetGame() {
+            this.gameOver = false;
+            this.victory = false;
+            this.currentLevel = 0; // Reinicia no primeiro nível
+            this.loadLevel(this.currentLevel);
+            this.gameState = 'PLAYING';
+            this.startAmbience(); // Reinicia a música ambiente se necessário
+            console.log("Jogo Reiniciado!");
+        }
+
+        /**
+         * Carrega um nível específico, criando todas as entidades (plataformas, inimigos, etc.) a partir do mapa.
+         * @param {number} levelIndex - O índice do nível a ser carregado.
+         */
         loadLevel(levelIndex) {
             if (levelIndex >= this.levels.length) {
                 this.victory = true;
@@ -930,7 +1319,7 @@ window.addEventListener('load', function () {
                         this.platforms.push(new Platform(x, y, tile));
                     }
                     else if (tile === 'P') {
-                        this.player = new Player(x, y);
+                        this.player = new Player(x, y, this); // Passa a referência do jogo
                     }
                     else if (tile === 'E') {
                         this.slimes.push(new Slime(x, y));
@@ -953,30 +1342,85 @@ window.addEventListener('load', function () {
                 }
             });
 
-            if (!this.player) this.player = new Player(100, 100);
+            if (!this.player) this.player = new Player(100, 100, this); // Passa a referência do jogo
             this.cameraX = 0;
         }
 
-        update(deltaTime) {
-            if (this.gameOver && !this.player.isDead) return;
+        /**
+         * Desenha a tela do menu inicial.
+         * @param {CanvasRenderingContext2D} context - O contexto 2D do canvas.
+         */
+        drawMenu(context) {
+            context.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            context.fillRect(0, 0, this.width, this.height);
+            context.fillStyle = '#FFF';
+            context.font = 'bold 60px Courier New';
+            context.textAlign = 'center';
+            context.fillText('Cavaleiro vs Slime', this.width / 2, this.height / 2 - 50);
+            context.font = '30px Courier New';
+            context.fillText('Clique ou Pressione Enter para Iniciar', this.width / 2, this.height / 2 + 50);
+        }
 
+        /**
+         * Desenha a tela final (Game Over ou Vitória).
+         * @param {CanvasRenderingContext2D} context - O contexto 2D do canvas.
+         */
+        drawEndScreen(context) {
+            context.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            context.fillRect(0, 0, this.width, this.height);
+            context.font = 'bold 60px Courier New';
+            context.textAlign = 'center';
+
+            if (this.victory) {
+                context.fillStyle = '#ffd700';
+                context.fillText('🏆 VITÓRIA! 🏆', this.width / 2, this.height / 2 - 100);
+                context.fillStyle = '#fff';
+                context.font = '30px Courier New';
+                context.fillText('Parabéns, você completou todos os níveis!', this.width / 2, this.height / 2 - 30);
+            } else {
+                context.fillStyle = '#e74c3c';
+                context.fillText('💀 GAME OVER 💀', this.width / 2, this.height / 2 - 100);
+            }
+
+            context.fillStyle = '#fff';
+            context.font = '24px Courier New';
+            context.textAlign = 'center';
+            context.fillText(`Kills Totais: ${this.player.killCount}`, this.width / 2, this.height / 2 + 20);
+            context.fillText(`Nível Alcançado: ${this.currentLevel + 1}`, this.width / 2, this.height / 2 + 60);
+
+            context.font = '30px Courier New';
+            context.fillText('Clique ou Pressione Enter para Reiniciar', this.width / 2, this.height / 2 + 120);
+        }
+
+
+
+        /**
+         * O loop de atualização principal do jogo, chamado a cada frame.
+         * @param {number} deltaTime - O tempo decorrido desde o último frame.
+         */
+        update(deltaTime) {
             this.particles.update(deltaTime);
             this.screenShake.update(deltaTime);
             this.trailRenderer.update(deltaTime);
 
             this.player.update(this.input, deltaTime, this);
 
+            // Se o jogador estiver morto, não precisamos atualizar inimigos, colisões, etc.
+            // Mas a atualização do jogador (acima) e a verificação de queda (abaixo) ainda precisam rodar.
+            if (this.player.isDead) {
+                // Verifica se o jogador caiu para fora do mapa mesmo depois de morto
+                if (this.player.y > this.height + 100) this.gameOver = true;
+                return;
+            }
+
             if (this.player.boostEndTime > 0 && Math.random() < 0.4) {
                 this.trailRenderer.addTrail(this.player);
             }
-
             this.slimes.forEach(s => {
                 if (isOnScreen(s, this.cameraX, this.width)) {
                     s.update(deltaTime, this.player);
                 }
             });
-
-            if (this.player.isDead) return;
 
             this.interactables.forEach(i => i.update?.(deltaTime));
             this.projectiles.forEach(p => p.update(deltaTime, this));
@@ -990,9 +1434,13 @@ window.addEventListener('load', function () {
 
             if (this.player.y > this.height + 100) {
                 this.player.die();
+                this.gameOver = true; // Define gameOver imediatamente na queda
             }
         }
 
+        /**
+         * Gerencia todas as verificações de colisão entre as entidades do jogo.
+         */
         handleCollisions() {
             const allEntities = [this.player, ...this.slimes];
 
@@ -1001,6 +1449,7 @@ window.addEventListener('load', function () {
 
                 for (const platform of this.platforms) {
                     if (checkAABBCollision(entity, platform)) {
+                        // Colisão com a parte de cima da plataforma
                         if (entity.vy >= 0 && (entity.y + entity.height) <= platform.y + entity.vy + GRAVITY) {
                             entity.y = platform.y - entity.height;
                             entity.vy = 0;
@@ -1010,6 +1459,7 @@ window.addEventListener('load', function () {
                 }
             }
 
+            // Colisão entre jogador e slimes
             this.slimes.forEach(slime => {
                 if (checkAABBCollision(this.player, slime)) {
                     this.player.takeDamage(10);
@@ -1023,6 +1473,7 @@ window.addEventListener('load', function () {
                 }
             });
 
+            // Colisão entre jogador e itens/obstáculos interativos
             this.interactables.forEach(item => {
                 if (checkAABBCollision(this.player, item)) {
                     if (item instanceof Flag) {
@@ -1061,6 +1512,7 @@ window.addEventListener('load', function () {
                 }
             });
 
+            // Colisão entre projéteis e slimes
             this.projectiles.forEach(p => {
                 this.slimes.forEach(s => {
                     if (checkAABBCollision(p, s)) {
@@ -1082,13 +1534,15 @@ window.addEventListener('load', function () {
             });
         }
 
+        /**
+         * Lida com a lógica de ataque do jogador, verificando colisões com inimigos.
+         * @param {Player} player - A instância do jogador que está atacando.
+         */
         handlePlayerAttack(player) {
             const hitboxWidth = player.width * 0.8;
             const hitboxHeight = player.height * 0.8;
             const hitbox = {
-                x: player.facingDirection > 0 ?
-                    player.x + player.width / 2 :
-                    player.x - hitboxWidth / 2,
+                x: player.facingDirection > 0 ? player.x + player.width / 2 : player.x - hitboxWidth / 2,
                 y: player.y + player.height * 0.1,
                 width: hitboxWidth,
                 height: hitboxHeight
@@ -1108,6 +1562,9 @@ window.addEventListener('load', function () {
                         { color: '#e74c3c', speedRange: 4 }
                     );
 
+
+
+
                     if (slime.markedForDeletion) {
                         player.killCount++;
                         this.particles.emit(
@@ -1122,9 +1579,39 @@ window.addEventListener('load', function () {
 
             if (hitSomething) {
                 this.screenShake.shake(150, 3);
+                // ADICIONE ESTA LINHA PARA O SOM DO ATAQUE
+                audioManager.play('swordAttack');
             }
         }
 
+        /**
+         * Inicia a reprodução de sons de ambiente em sequência.
+         */
+        startAmbience() {
+            const ambienceSounds = ['ambience1', 'ambience2'];
+            let currentAmbience = 0;
+
+            const playNext = () => {
+                const soundName = ambienceSounds[currentAmbience];
+                const sound = audioManager.sounds[soundName];
+
+                if (sound) {
+                    sound.volume = 0.3; // Volume baixo para não incomodar
+                    sound.play();
+                    sound.onended = () => {
+                        // Toca o próximo som da lista quando o atual terminar
+                        currentAmbience = (currentAmbience + 1) % ambienceSounds.length;
+                        playNext();
+                    };
+                }
+            };
+            playNext();
+        }
+
+        /**
+         * Cria e adiciona uma nova instância de BlueFireball ao jogo.
+         * @param {Player} player - O jogador que está disparando.
+         */
         createFireball(player) {
             const fireballX = player.facingDirection > 0 ?
                 player.x + player.width :
@@ -1141,6 +1628,9 @@ window.addEventListener('load', function () {
             );
         }
 
+        /**
+         * Atualiza a posição da câmera para seguir o jogador, com uma "zona morta" no centro.
+         */
         updateCamera() {
             const deadZone = this.width / 3;
 
@@ -1157,6 +1647,10 @@ window.addEventListener('load', function () {
             if (this.cameraX > maxCameraX) this.cameraX = maxCameraX;
         }
 
+        /**
+         * O loop de desenho principal do jogo, chamado a cada frame para renderizar tudo na tela.
+         * @param {CanvasRenderingContext2D} context - O contexto 2D do canvas.
+         */
         draw(context) {
             context.save();
 
@@ -1165,15 +1659,21 @@ window.addEventListener('load', function () {
             context.translate(-Math.floor(this.cameraX), 0);
 
             const bg = this.backgrounds[this.currentLevel] || this.backgrounds[0];
-            if (bg?.complete && bg.naturalHeight > 0) {
-                const bgX = this.cameraX * 0.3;
-                const bgWidth = this.width;
-                const numBackgrounds = Math.ceil(this.width / bgWidth) + 2;
 
-                for (let i = -1; i < numBackgrounds; i++) {
-                    context.drawImage(bg, bgX + i * bgWidth, 0, bgWidth, this.height);
+            // ===== SUBSTITUA O CÓDIGO DE DESENHO DO FUNDO POR ESTE =====
+            if (bg?.complete && bg.naturalHeight > 0) {
+                const bgPatternWidth = bg.width; // Largura da imagem de fundo
+                // Calcula a posição X inicial para o desenho, aplicando parallax e fazendo o wrap com modulo
+                const bgStartX = (this.cameraX * 0.3) % bgPatternWidth;
+
+                // Desenha a imagem de fundo repetidamente para cobrir a tela
+                // Começa desenhando um pouco antes da posição calculada para cobrir a borda esquerda
+                for (let x = -bgStartX - bgPatternWidth; x < this.width + this.cameraX; x += bgPatternWidth) {
+                     // Desenha a imagem inteira, esticando-a para a altura da tela
+                     context.drawImage(bg, Math.floor(x), 0, bgPatternWidth, this.height);
                 }
             }
+            // ============================================================
 
             const tileset = this.tilesets[this.currentLevel];
             this.platforms.forEach(p => {
@@ -1207,6 +1707,10 @@ window.addEventListener('load', function () {
             this.drawHUD(context);
         }
 
+        /**
+         * Desenha a Interface do Usuário (HUD), como vida, kills, etc.
+         * @param {CanvasRenderingContext2D} context - O contexto 2D do canvas.
+         */
         drawHUD(context) {
             context.fillStyle = 'rgba(0, 0, 0, 0.5)';
             context.fillRect(10, 10, 300, 150);
@@ -1264,75 +1768,84 @@ window.addEventListener('load', function () {
     let game;
     let lastTime = 0;
 
+    /**
+     * A função principal do loop do jogo, que é chamada repetidamente pelo requestAnimationFrame.
+     * @param {number} timestamp - O tempo atual fornecido pelo navegador.
+     */
     function animate(timestamp) {
+        // ---- Tela de Carregamento ----
         if (imagesLoaded < numImages) {
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = '#4ecdc4';
-            ctx.font = '30px Courier New';
-            ctx.textAlign = 'center';
+            ctx.fillStyle = '#000'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#4ecdc4'; ctx.font = '30px Courier New'; ctx.textAlign = 'center';
             ctx.fillText(`Carregando Assets...`, canvas.width / 2, canvas.height / 2 - 20);
-
             const progress = (imagesLoaded / numImages) * 100;
-            ctx.fillStyle = '#333';
-            ctx.fillRect(canvas.width / 2 - 200, canvas.height / 2 + 20, 400, 30);
-            ctx.fillStyle = '#4ecdc4';
-            ctx.fillRect(canvas.width / 2 - 200, canvas.height / 2 + 20, 400 * (progress / 100), 30);
-
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(canvas.width / 2 - 200, canvas.height / 2 + 20, 400, 30);
-
-            ctx.fillStyle = '#fff';
-            ctx.fillText(`${Math.floor(progress)}%`, canvas.width / 2, canvas.height / 2 + 42);
-
+            ctx.fillStyle = '#333'; ctx.fillRect(canvas.width / 2 - 200, canvas.height / 2 + 20, 400, 30);
+            ctx.fillStyle = '#4ecdc4'; ctx.fillRect(canvas.width / 2 - 200, canvas.height / 2 + 20, 400 * (progress / 100), 30);
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.strokeRect(canvas.width / 2 - 200, canvas.height / 2 + 20, 400, 30);
+            ctx.fillStyle = '#fff'; ctx.fillText(`${Math.floor(progress)}%`, canvas.width / 2, canvas.height / 2 + 42);
             requestAnimationFrame(animate);
             return;
         }
 
+        // ---- Cria o Jogo (só na primeira vez) ----
         if (!game) {
             game = new Game(canvas.width, canvas.height);
+            // Não inicia a música ambiente aqui, só quando o jogo começa
         }
 
         const deltaTime = timestamp - lastTime;
         lastTime = timestamp;
 
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = '#000'; // Limpa a tela
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        game.update(deltaTime || 0);
-        game.draw(ctx);
+        // ---- Lógica Principal baseada no Estado ----
+        switch (game.gameState) {
+            case 'MENU':
+                game.drawMenu(ctx); // Desenha o menu
+                break;
 
-        if (game.gameOver) {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            case 'PLAYING':
+                game.update(deltaTime || 0); // Atualiza a lógica do jogo
+                game.draw(ctx);          // Desenha o jogo
+                // Verifica se o jogo terminou nesta frame
+                if (game.gameOver || game.victory) {
+                    game.gameState = game.victory ? 'VICTORY' : 'GAME_OVER';
+                }
+                break;
 
-            ctx.fillStyle = '#fff';
-            ctx.font = 'bold 60px Courier New';
-            ctx.textAlign = 'center';
-
-            if (game.victory) {
-                ctx.fillStyle = '#ffd700';
-                ctx.fillText('🏆 VITÓRIA! 🏆', canvas.width / 2, canvas.height / 2 - 50);
-                ctx.fillStyle = '#fff';
-                ctx.font = '30px Courier New';
-                ctx.fillText('Parabéns, você completou todos os níveis!', canvas.width / 2, canvas.height / 2 + 20);
-            } else {
-                ctx.fillStyle = '#e74c3c';
-                ctx.fillText('💀 GAME OVER 💀', canvas.width / 2, canvas.height / 2 - 50);
-                ctx.fillStyle = '#fff';
-                ctx.font = '30px Courier New';
-                ctx.fillText('Pressione F5 para jogar novamente', canvas.width / 2, canvas.height / 2 + 20);
-            }
-
-            ctx.font = '24px Courier New';
-            ctx.fillText(`Kills Totais: ${game.player.killCount}`, canvas.width / 2, canvas.height / 2 + 70);
-            ctx.fillText(`Nível Alcançado: ${game.currentLevel + 1}`, canvas.width / 2, canvas.height / 2 + 110);
-        } else {
-            requestAnimationFrame(animate);
+            case 'GAME_OVER':
+            case 'VICTORY':
+                game.draw(ctx); // Continua a desenhar o último estado do jogo por baixo
+                game.drawEndScreen(ctx); // Desenha o ecrã final por cima
+                break;
         }
+
+        // Continua a animação, a não ser que o jogo tenha realmente terminado (opcional)
+        requestAnimationFrame(animate);
     }
 
+    // ===== ADICIONE ESTE OUVINTE DE EVENTOS =====
+    /**
+     * Lida com interações do usuário (clique ou Enter) para iniciar ou reiniciar o jogo.
+     */
+    function handleInteraction() {
+        if (!game) return; // Se o jogo ainda não foi criado, ignora
+
+        if (game.gameState === 'MENU') {
+            game.resetGame(); // Começa o jogo a partir do menu
+        } else if (game.gameState === 'GAME_OVER' || game.gameState === 'VICTORY') {
+            game.resetGame(); // Reinicia o jogo a partir do ecrã final
+        }
+    }
+    canvas.addEventListener('click', handleInteraction);
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            handleInteraction();
+        }
+    });
+    // ============================================
+
+    // Inicia o loop
     animate(0);
 });
